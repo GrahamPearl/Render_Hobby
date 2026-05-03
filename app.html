@@ -1,0 +1,2271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Assessment Portal</title>
+    <style>
+      :root {
+        --primary: #1a3a5c;
+        --primary-lt: #2563a8;
+        --accent: #e8a020;
+        --ok: #16a34a;
+        --err: #dc2626;
+        --warn: #d97706;
+        --bg: #f0f4f8;
+        --card: #fff;
+        --text: #1e293b;
+        --muted: #64748b;
+        --border: #e2e8f0;
+        --r: 12px;
+        --sh: 0 2px 12px rgba(0, 0, 0, 0.08);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      /* ── NAV ── */
+      nav {
+        background: var(--primary);
+        color: #fff;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 60px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      .brand {
+        font-size: 1.15rem;
+        font-weight: 700;
+      }
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.88rem;
+        flex-wrap: wrap;
+      }
+      .role-badge {
+        background: var(--accent);
+        color: #fff;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .btn-logout {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 5px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.83rem;
+      }
+      .btn-logout:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .assess-sel {
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        font-size: 0.83rem;
+        outline: none;
+      }
+      .assess-sel option {
+        color: #0f172a;
+      }
+
+      /* ── VIEWS ── */
+      .view {
+        display: none;
+      }
+      .view.active {
+        display: block;
+      }
+      #view-login.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, var(--primary), var(--primary-lt));
+      }
+
+      /* ── LOGIN ── */
+      .login-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 48px 40px;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        text-align: center;
+      }
+      .login-logo {
+        font-size: 3rem;
+        margin-bottom: 10px;
+      }
+      .login-card h1 {
+        color: var(--primary);
+        font-size: 1.55rem;
+        margin-bottom: 6px;
+      }
+      .login-card > p {
+        color: var(--muted);
+        font-size: 0.88rem;
+        margin-bottom: 28px;
+      }
+      label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        text-align: left;
+      }
+      .inp {
+        width: 100%;
+        padding: 11px 15px;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.97rem;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .inp:focus {
+        border-color: var(--primary-lt);
+      }
+      .fg {
+        margin-bottom: 14px;
+      }
+      .btn-primary {
+        width: 100%;
+        padding: 12px;
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.97rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-top: 6px;
+      }
+      .btn-primary:hover {
+        background: var(--primary-lt);
+      }
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .err-msg {
+        background: #fee2e2;
+        color: var(--err);
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 0.83rem;
+        margin-top: 10px;
+        display: none;
+      }
+
+      /* ── LAYOUT ── */
+      .main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 30px 24px;
+      }
+      .pg-title {
+        font-size: 1.45rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 22px;
+      }
+      .card {
+        background: var(--card);
+        border-radius: var(--r);
+        padding: 22px 24px;
+        box-shadow: var(--sh);
+        margin-bottom: 20px;
+      }
+      .card h2 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* ── BUTTONS ── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 0.87rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.18s;
+      }
+      .btn-sm {
+        padding: 5px 12px;
+        font-size: 0.78rem;
+      }
+      .btn-xs {
+        padding: 3px 8px;
+        font-size: 0.72rem;
+      }
+      .btn-blue {
+        background: var(--primary-lt);
+        color: #fff;
+      }
+      .btn-blue:hover {
+        background: var(--primary);
+      }
+      .btn-green {
+        background: var(--ok);
+        color: #fff;
+      }
+      .btn-green:hover {
+        background: #15803d;
+      }
+      .btn-warn {
+        background: var(--warn);
+        color: #fff;
+      }
+      .btn-warn:hover {
+        background: #b45309;
+      }
+      .btn-red {
+        background: var(--err);
+        color: #fff;
+      }
+      .btn-red:hover {
+        background: #b91c1c;
+      }
+      .btn-out {
+        background: transparent;
+        border: 2px solid var(--border);
+        color: var(--text);
+      }
+      .btn-out:hover {
+        border-color: var(--primary-lt);
+        color: var(--primary-lt);
+      }
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      /* ── UPLOAD ZONE ── */
+      .drop-zone {
+        border: 2px dashed var(--border);
+        border-radius: 8px;
+        padding: 28px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+      }
+      .drop-zone:hover:not(.locked) {
+        border-color: var(--primary-lt);
+        background: #f0f7ff;
+      }
+      .drop-zone.locked {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      .drop-zone .dz-icon {
+        font-size: 2.2rem;
+        margin-bottom: 6px;
+      }
+      .drop-zone strong {
+        display: block;
+        margin-bottom: 3px;
+      }
+      .drop-zone p {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      input[type="file"] {
+        display: none;
+      }
+
+      /* ── LOCK BANNER ── */
+      .banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        border: 1px solid;
+      }
+      .banner-warn {
+        background: #fef3c7;
+        border-color: #f59e0b;
+      }
+      .banner-ok {
+        background: #dcfce7;
+        border-color: #86efac;
+      }
+      .banner-info {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1e40af;
+      }
+      .banner .timer {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--warn);
+        font-variant-numeric: tabular-nums;
+        min-width: 46px;
+      }
+      .progress-wrap {
+        background: var(--border);
+        border-radius: 4px;
+        height: 6px;
+        flex: 1;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--warn);
+        border-radius: 4px;
+        transition: width 1s linear;
+      }
+
+      /* ── STATS ── */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+      .stat {
+        background: var(--card);
+        border-radius: var(--r);
+        padding: 18px;
+        box-shadow: var(--sh);
+        text-align: center;
+      }
+      .stat .n {
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: var(--primary);
+      }
+      .stat .lbl {
+        font-size: 0.78rem;
+        color: var(--muted);
+        margin-top: 3px;
+        font-weight: 500;
+      }
+      @media (max-width: 640px) {
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      /* ── SCORE CIRCLE ── */
+      .score-row {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+      .sc {
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .sc .sn {
+        font-size: 1.7rem;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .sc .sd {
+        font-size: 0.7rem;
+        opacity: 0.7;
+      }
+      .sc-a {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .sc-b {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .sc-c {
+        background: #fef9c3;
+        color: #854d0e;
+      }
+      .sc-d {
+        background: #ffedd5;
+        color: #9a3412;
+      }
+      .sc-f {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      /* ── TABS ── */
+      .tabs {
+        display: flex;
+        gap: 2px;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 22px;
+        flex-wrap: wrap;
+      }
+      .tab {
+        padding: 9px 20px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--muted);
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.18s;
+      }
+      .tab.active {
+        color: var(--primary-lt);
+        border-bottom-color: var(--primary-lt);
+      }
+      .tab-panel {
+        display: none;
+      }
+      .tab-panel.active {
+        display: block;
+      }
+
+      /* ── TABLES ── */
+      .tbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.86rem;
+      }
+      .tbl th {
+        background: var(--bg);
+        padding: 9px 12px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--muted);
+        border-bottom: 2px solid var(--border);
+      }
+      .tbl td {
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+      }
+      .tbl tr:last-child td {
+        border-bottom: none;
+      }
+      .tbl tr:hover td {
+        background: #f8fafc;
+      }
+      .tbl-hd th {
+        background: var(--primary);
+        color: #fff;
+      }
+      .tbl-hd th:first-child {
+        border-radius: 8px 0 0 0;
+      }
+      .tbl-hd th:last-child {
+        border-radius: 0 8px 0 0;
+      }
+      .pass {
+        color: var(--ok);
+        font-weight: 700;
+      }
+      .fail {
+        color: var(--err);
+        font-weight: 700;
+      }
+
+      /* ── BADGES ── */
+      .badge {
+        display: inline-block;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 600;
+      }
+      .bg-ok {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .bg-err {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .bg-warn {
+        background: #fef9c3;
+        color: #854d0e;
+      }
+      .bg-gray {
+        background: #f1f5f9;
+        color: #475569;
+      }
+      .bg-blue {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .bg-purple {
+        background: #f3e8ff;
+        color: #6b21a8;
+      }
+
+      /* ── SCORE BAR ── */
+      .bar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .bar {
+        height: 8px;
+        border-radius: 4px;
+        flex: 1;
+        background: var(--border);
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        border-radius: 4px;
+      }
+
+      /* ── MODAL ── */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+      }
+      .overlay.open {
+        display: flex;
+      }
+      .modal {
+        background: #fff;
+        border-radius: var(--r);
+        padding: 26px;
+        max-width: 620px;
+        width: 100%;
+        max-height: 86vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+      .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+      .modal-head h2 {
+        font-size: 1.05rem;
+        color: var(--primary);
+      }
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        color: var(--muted);
+      }
+
+      /* ── TOAST ── */
+      .toast {
+        position: fixed;
+        bottom: 22px;
+        right: 22px;
+        color: #fff;
+        padding: 11px 18px;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        transform: translateY(70px);
+        opacity: 0;
+        transition: all 0.28s;
+        z-index: 9999;
+        max-width: 300px;
+      }
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      .toast.ok {
+        background: var(--ok);
+      }
+      .toast.er {
+        background: var(--err);
+      }
+      .toast.wr {
+        background: var(--warn);
+      }
+      .toast.def {
+        background: var(--primary);
+      }
+
+      /* ── SPINNER ── */
+      .spin {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: sp 0.65s linear infinite;
+        vertical-align: middle;
+      }
+      @keyframes sp {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── PENDING ── */
+      .pending {
+        text-align: center;
+        padding: 38px 20px;
+        color: var(--muted);
+      }
+      .pending .pi {
+        font-size: 2.8rem;
+        margin-bottom: 10px;
+      }
+
+      /* ── CHART ── */
+      .chart-wrap {
+        position: relative;
+        height: 240px;
+        margin-top: 16px;
+      }
+
+      /* ── CODE HINT ── */
+      code {
+        background: #f1f5f9;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.82rem;
+        color: #0f172a;
+      }
+
+      /* ── SCROLLABLE STUDENT LIST ── */
+      .student-scroll {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        max-height: 400px;
+        overflow-y: auto;
+        background: var(--bg);
+      }
+
+      /* ── CHECKBOX GROUP ── */
+      .check-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        padding: 12px;
+        background: var(--bg);
+        border-radius: 8px;
+      }
+      .check-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .check-item input[type="checkbox"] {
+        cursor: pointer;
+      }
+      .check-item label {
+        margin: 0;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-transform: none;
+      }
+
+      /* ── CLASS SELECT ── */
+      .class-input-wrap {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+      }
+      .class-input-wrap select,
+      .class-input-wrap input {
+        flex: 1;
+        min-width: 0;
+      }
+      .class-input-wrap button {
+        flex-shrink: 0;
+      }
+
+      /* ── GRID LAYOUT FOR FORM ── */
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAV -->
+    <nav id="app-nav" style="display: none">
+      <div class="brand">📚 Assessment Portal</div>
+      <div class="nav-right">
+        <span id="nav-email" style="font-size: 0.85rem"></span>
+        <span class="role-badge" id="nav-role"></span>
+        <select
+          id="assess-sel"
+          class="assess-sel"
+          style="display: none"
+          onchange="onAssessmentChange(this.value)"
+        ></select>
+        <button
+          id="assess-new"
+          class="btn-logout"
+          style="display: none"
+          onclick="createAssessment()"
+        >
+          New
+        </button>
+        <button
+          id="assess-toggle"
+          class="btn-logout"
+          style="display: none"
+          onclick="toggleAssessmentActive()"
+        >
+          Close
+        </button>
+        <button class="btn-logout" onclick="logout()">Sign Out</button>
+      </div>
+    </nav>
+
+    <!-- ═══════════════════════════ LOGIN ═══════════════════════════ -->
+    <div id="view-login" class="view active">
+      <div class="login-card">
+        <div class="login-logo">🎓</div>
+        <h1>Assessment Portal</h1>
+        <p>Sign in with your school email to continue</p>
+        <div class="fg">
+          <label>Email Address</label>
+          <input
+            class="inp"
+            type="email"
+            id="login-email"
+            placeholder="you@school.com"
+            onkeydown="if (event.key === 'Enter') doLogin();"
+          />
+        </div>
+        <button class="btn-primary" id="login-btn" onclick="doLogin()">
+          Sign In
+        </button>
+        <div class="err-msg" id="login-err"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════ STUDENT ═══════════════════════════ -->
+    <div id="view-student" class="view">
+      <div class="main">
+        <div class="pg-title">My Dashboard</div>
+
+        <div id="lock-banner" class="banner banner-warn" style="display: none">
+          <span>🔒</span>
+          <div style="flex: 1">
+            <strong style="display: block; margin-bottom: 5px"
+              >Submission received — window locked</strong
+            >
+            <div class="progress-wrap">
+              <div class="progress-fill" id="lock-prog"></div>
+            </div>
+          </div>
+          <div class="timer" id="lock-timer">5:00</div>
+        </div>
+
+        <div class="card">
+          <h2>📤 Submit Your File</h2>
+
+          <p
+            id="stu-instructions"
+            style="font-size: 0.85rem; color: var(--muted); margin-bottom: 14px"
+          >
+            Upload your file. Submissions are locked for <strong>5 minutes</strong>
+            after uploading — submit only when ready.
+          </p>
+
+          <div class="drop-zone" id="drop-zone" onclick="triggerUpload()">
+            <div class="dz-icon">📄</div>
+            <strong id="dz-label">Click to select your file</strong>
+            <p id="dz-formats">Supported formats will be shown here</p>
+          </div>
+          <input type="file" id="stu-file" onchange="submitFile()" />
+          <div
+            style="
+              margin-top: 12px;
+              display: flex;
+              gap: 10px;
+              align-items: center;
+              flex-wrap: wrap;
+            "
+          >
+            <button class="btn btn-blue" id="sub-btn" onclick="triggerUpload()">
+              Upload &amp; Submit
+            </button>
+            <span
+              id="sub-status"
+              style="font-size: 0.84rem; color: var(--muted)"
+            ></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>📋 Your Marking Report</h2>
+          <div id="report-area">
+            <div class="pending">
+              <div class="pi">⏳</div>
+              <p>
+                Your report will appear here once your teacher marks your
+                submission.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════ TEACHER ═══════════════════════════ -->
+    <div id="view-teacher" class="view">
+      <div class="main">
+        <div class="pg-title">Teacher Dashboard</div>
+
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="n" id="st-total">—</div>
+            <div class="lbl">Students</div>
+          </div>
+          <div class="stat">
+            <div class="n" id="st-sub">—</div>
+            <div class="lbl">Submitted</div>
+          </div>
+          <div class="stat">
+            <div class="n" id="st-marked">—</div>
+            <div class="lbl">Marked</div>
+          </div>
+          <div class="stat">
+            <div class="n" id="st-avg">—</div>
+            <div class="lbl">Class Average</div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button
+            class="tab active"
+            data-tab="students"
+            onclick="switchTab('students')"
+          >
+            👥 Students
+          </button>
+          <button class="tab" data-tab="script" onclick="switchTab('script')">
+            🐍 Marking Script
+          </button>
+          <button class="tab" data-tab="reports" onclick="switchTab('reports')">
+            📊 Reports
+          </button>
+        </div>
+
+        <!-- ── TAB: STUDENTS ── -->
+        <div id="tab-students" class="tab-panel active">
+          <div class="card">
+            <h2>📁 Upload Student Email List</h2>
+            <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 14px">
+              A plain <strong>.txt</strong> file. Format: <code>email@school.com</code>
+              or <code>email@school.com,ClassName</code> (one per line).
+            </p>
+            <div
+              class="drop-zone"
+              onclick="document.getElementById('stu-list-inp').click()"
+            >
+              <div class="dz-icon">📋</div>
+              <strong>Click to upload student list</strong>
+              <p>.txt file — one email per line</p>
+            </div>
+            <input
+              type="file"
+              id="stu-list-inp"
+              accept=".txt"
+              onchange="uploadStudentList()"
+            />
+          </div>
+          <div class="card">
+            <h2>👥 Registered Students</h2>
+
+            <div
+              style="
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                align-items: flex-end;
+                margin-bottom: 12px;
+              "
+            >
+              <div style="flex: 1; min-width: 200px">
+                <label>Add Student Email</label>
+                <input
+                  class="inp"
+                  type="email"
+                  id="stu-add-inp"
+                  placeholder="student@school.com"
+                  onkeydown="if (event.key === 'Enter') openAddStudent();"
+                />
+              </div>
+              <button class="btn btn-blue" onclick="openAddStudent()">
+                ➕ Add Student
+              </button>
+            </div>
+
+            <div id="reg-status">
+              <div class="pending">
+                <div class="pi">📭</div>
+                <p>No students registered yet.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── TAB: SCRIPT ── -->
+        <div id="tab-script" class="tab-panel">
+          <div class="card">
+            <h2>⚙️ Assessment Settings</h2>
+
+            <div class="form-grid">
+              <div>
+                <label>Max File Size (MB)</label>
+                <input
+                  class="inp"
+                  type="number"
+                  id="as-max"
+                  min="1"
+                  step="1"
+                  value="10"
+                />
+              </div>
+
+              <div>
+                <label>Status</label>
+                <select id="as-active" class="inp">
+                  <option value="true">Active</option>
+                  <option value="false">Closed</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 14px">
+              <label>Allowed File Types</label>
+              <div class="check-group">
+                <div class="check-item">
+                  <input type="checkbox" id="ext-docx" value=".docx" checked />
+                  <label for="ext-docx">Word (.docx)</label>
+                </div>
+                <div class="check-item">
+                  <input type="checkbox" id="ext-xlsx" value=".xlsx" />
+                  <label for="ext-xlsx">Excel (.xlsx)</label>
+                </div>
+                <div class="check-item">
+                  <input type="checkbox" id="ext-pptx" value=".pptx" />
+                  <label for="ext-pptx">PowerPoint (.pptx)</label>
+                </div>
+                <div class="check-item">
+                  <input type="checkbox" id="ext-py" value=".py" />
+                  <label for="ext-py">Python (.py)</label>
+                </div>
+                <div class="check-item">
+                  <input type="checkbox" id="ext-pas" value=".pas" />
+                  <label for="ext-pas">Pascal (.pas)</label>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 14px">
+              <label>Student Instructions</label>
+              <textarea
+                id="as-inst"
+                class="inp"
+                rows="3"
+                placeholder="Example: Upload your Excel workbook with formulas only."
+              ></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap">
+              <button class="btn btn-blue" onclick="loadAssessmentSettings()">
+                ↻ Load Current
+              </button>
+              <button class="btn btn-green" onclick="saveAssessmentSettings()">
+                💾 Save Settings
+              </button>
+            </div>
+
+            <div
+              id="as-settings-status"
+              style="margin-top: 12px; font-size: 0.84rem; color: var(--muted)"
+            ></div>
+          </div>
+
+          <div class="card">
+            <h2>⬆️ Upload Marking Script</h2>
+            <div class="banner banner-info" style="margin-bottom: 14px">
+              ℹ️ The script is called as:<br />
+              <code
+                >python script.py &lt;folder_path&gt;
+                &lt;student_email&gt;</code
+              ><br />
+              It must print a JSON object to stdout with keys:
+              <code>score</code>, <code>total</code>, <code>grade</code>,
+              <code>tasks[]</code>.
+            </div>
+            <div id="script-status" style="margin-bottom: 14px"></div>
+            <div
+              class="drop-zone"
+              onclick="document.getElementById('script-inp').click()"
+            >
+              <div class="dz-icon">🐍</div>
+              <strong>Click to upload script.py</strong>
+              <p>Python files only (.py)</p>
+            </div>
+            <input
+              type="file"
+              id="script-inp"
+              accept=".py"
+              onchange="uploadScript()"
+            />
+          </div>
+
+          <div class="card">
+            <h2>▶️ Run Marking</h2>
+            <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 14px">
+              Execute the uploaded script against all student submissions, or
+              target one student.
+            </p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap">
+              <button class="btn btn-green" onclick="runMarking(null)">
+                ▶ Mark All Submissions
+              </button>
+              <button class="btn btn-out" onclick="openMarkOne()">
+                🎯 Mark One Student
+              </button>
+            </div>
+            <div id="mark-prog" style="margin-top: 14px"></div>
+          </div>
+        </div>
+
+        <!-- ── TAB: REPORTS ── -->
+        <div id="tab-reports" class="tab-panel">
+          <div class="card">
+            <h2>📊 Class Score Overview</h2>
+            <div class="chart-wrap"><canvas id="chart"></canvas></div>
+          </div>
+          <div class="card">
+            <h2>📋 Submission Summary</h2>
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 10px">
+              <button class="btn btn-sm btn-out" onclick="loadSummary()">
+                🔄 Refresh
+              </button>
+            </div>
+            <div id="smry-area">
+              <div class="pending">
+                <div class="pi">📭</div>
+                <p>No submissions yet.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="overlay" id="overlay" onclick="maybeClose(event)">
+      <div class="modal" id="modal-box">
+        <div class="modal-head">
+          <h2 id="modal-title">Report</h2>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast def" id="toast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script>
+      // ─── Config ─────────────────────────────────────
+      const API =
+        location.origin && location.origin !== "null"
+          ? `${location.origin}/api`
+          : "http://localhost:5000/api";
+      const LOCK = 300; // seconds
+
+      // ─── State ──────────────────────────────────────
+      let S = { email: null, role: null };
+      let CURRENT_AID = null;
+      let ASSESSMENTS = [];
+      let CLASSES = [];
+
+      let lockEnd = 0,
+        lockIv = null,
+        pollIv = null,
+        chartObj = null;
+
+      // ─── Views ──────────────────────────────────────
+      function show(id) {
+        document
+          .querySelectorAll(".view")
+          .forEach((v) => v.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+        document.getElementById("app-nav").style.display =
+          id === "view-login" ? "none" : "flex";
+      }
+
+      function logout() {
+        S = { email: null, role: null };
+        clearInterval(lockIv);
+        clearInterval(pollIv);
+        show("view-login");
+        CURRENT_AID = null;
+        document.getElementById("login-email").value = "";
+        document.getElementById("login-err").style.display = "none";
+      }
+
+      // ─── Toast ──────────────────────────────────────
+      function toast(msg, type = "def") {
+        const el = document.getElementById("toast");
+        el.textContent = msg;
+        el.className = `toast ${type} show`;
+        setTimeout(() => (el.className = `toast ${type}`), 3000);
+      }
+
+      // ─── Tabs ────────────────────────────────────────
+      function switchTab(name) {
+        document
+          .querySelectorAll(".tab")
+          .forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+        document
+          .querySelectorAll(".tab-panel")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById("tab-" + name).classList.add("active");
+
+        if (name === "reports") {
+          loadSummary();
+          buildChart();
+        }
+        if (name === "students") loadStudentList();
+        if (name === "script") {
+          checkScript();
+          loadAssessmentSettings();
+        }
+      }
+
+      // ─── API helper ─────────────────────────────────
+      async function api(path, opts = {}) {
+        const r = await fetch(API + path, opts);
+        const ct = (r.headers.get("content-type") || "").toLowerCase();
+        let data;
+        if (ct.includes("application/json")) {
+          data = await r.json();
+        } else {
+          const text = await r.text();
+          data = { error: "Non-JSON response", status: r.status, body: text };
+        }
+        return [r, data];
+      }
+
+      // ─── Assessment helpers ─────────────────────────
+      function aPath(p) {
+        if (!CURRENT_AID) throw new Error("No assessment selected");
+        return `/a/${CURRENT_AID}${p}`;
+      }
+
+      function getCurrentAssessment() {
+        return ASSESSMENTS.find((a) => a.id === CURRENT_AID) || null;
+      }
+
+      function applyAssessmentPolicy() {
+        const a = getCurrentAssessment();
+        const fileInp = document.getElementById("stu-file");
+        const inst = document.getElementById("stu-instructions");
+        const dzFormats = document.getElementById("dz-formats");
+
+        if (!fileInp || !inst) return;
+
+        if (!a) {
+          fileInp.accept = "";
+          inst.innerHTML = "No active assessment selected.";
+          dzFormats.textContent = "";
+          setDisabled(true, "No active assessment");
+          return;
+        }
+
+        const exts =
+          a.allowed_extensions && a.allowed_extensions.length
+            ? a.allowed_extensions
+            : [".docx"];
+
+        const maxMb = Number(a.max_size_mb || 10);
+        fileInp.accept = exts.join(",");
+        dzFormats.textContent = `Allowed: ${exts.join(", ")} • Max: ${maxMb} MB`;
+
+        if (a.instructions && String(a.instructions).trim()) {
+          inst.innerHTML = a.instructions;
+        } else {
+          inst.innerHTML = `Upload your <strong>${exts.join(", ")}</strong> file. Submissions are locked for <strong>5 minutes</strong> after uploading.`;
+        }
+
+        if (a.active === false) {
+          setDisabled(true, "Assessment closed");
+        } else {
+          setDisabled(false);
+          checkLock();
+        }
+      }
+
+      async function loadAssessments() {
+        const sel = document.getElementById("assess-sel");
+        const btn = document.getElementById("assess-new");
+        const toggleBtn = document.getElementById("assess-toggle");
+
+        try {
+          const [r, d] = await api("/assessments");
+          if (!r.ok) throw new Error(d.error || "Failed to load assessments");
+
+          ASSESSMENTS = Array.isArray(d) ? d : [];
+
+          if (sel)
+            sel.style.display =
+              S.role === "teacher" || S.role === "student"
+                ? "inline-block"
+                : "none";
+          if (btn) btn.style.display = S.role === "teacher" ? "inline-block" : "none";
+          if (toggleBtn)
+            toggleBtn.style.display = S.role === "teacher" ? "inline-block" : "none";
+
+          if (!ASSESSMENTS.length) {
+            CURRENT_AID = null;
+            if (sel) sel.innerHTML = '<option value="">(No assessments)</option>';
+            return;
+          }
+
+          const saved = localStorage.getItem("aid");
+
+          if (S.role === "teacher") {
+            sel.innerHTML = ASSESSMENTS.map(
+              (a) =>
+                `<option value="${a.id}">${a.name}${a.active === false ? " (Closed)" : ""}</option>`,
+            ).join("");
+
+            const foundCurrent =
+              CURRENT_AID && ASSESSMENTS.find((a) => a.id === CURRENT_AID);
+            const foundSaved = saved && ASSESSMENTS.find((a) => a.id === saved);
+
+            CURRENT_AID = foundCurrent
+              ? foundCurrent.id
+              : foundSaved
+                ? foundSaved.id
+                : ASSESSMENTS[0].id;
+
+            sel.value = CURRENT_AID;
+            localStorage.setItem("aid", CURRENT_AID);
+          } else {
+            const active = ASSESSMENTS.filter((a) => a.active !== false);
+            if (!active.length) {
+              CURRENT_AID = null;
+              sel.innerHTML =
+                '<option value="">(No active assessments)</option>';
+              applyAssessmentPolicy();
+              return;
+            }
+
+            sel.innerHTML = active
+              .map((a) => `<option value="${a.id}">${a.name}</option>`)
+              .join("");
+
+            const foundCurrent =
+              CURRENT_AID && active.find((a) => a.id === CURRENT_AID);
+            const foundSaved = saved && active.find((a) => a.id === saved);
+
+            if (foundCurrent) {
+              CURRENT_AID = foundCurrent.id;
+            } else if (foundSaved) {
+              CURRENT_AID = foundSaved.id;
+            } else {
+              const withDates = active.filter((a) => a.created_at);
+              if (withDates.length) {
+                withDates.sort((a, b) =>
+                  a.created_at < b.created_at ? -1 : 1,
+                );
+                CURRENT_AID = withDates[withDates.length - 1].id;
+              } else {
+                CURRENT_AID = active[active.length - 1].id;
+              }
+            }
+
+            sel.value = CURRENT_AID;
+            localStorage.setItem("aid", CURRENT_AID);
+
+            applyAssessmentPolicy();
+          }
+        } catch (e) {
+          console.error("loadAssessments failed", e);
+          CURRENT_AID = null;
+          if (sel) sel.style.display = "none";
+          if (btn) btn.style.display = "none";
+          if (toggleBtn) toggleBtn.style.display = "none";
+        }
+      }
+
+      function updateAssessmentToggleButton() {
+        if (S.role !== "teacher") return;
+        const btn = document.getElementById("assess-toggle");
+        const a = getCurrentAssessment();
+        if (!btn || !a) return;
+        btn.textContent = a.active === false ? "Open" : "Close";
+      }
+
+      async function toggleAssessmentActive() {
+        if (S.role !== "teacher") return;
+        const a = getCurrentAssessment();
+        if (!a) return;
+        const next = a.active === false;
+        const action = next ? "Open" : "Close";
+        if (!confirm(`${action} assessment: ${a.name}?`)) return;
+        const [r, d] = await api(`/assessments/${a.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ active: next }),
+        });
+        if (!r.ok) {
+          toast(d.error || "Could not update assessment.", "er");
+          return;
+        }
+        const idx = ASSESSMENTS.findIndex((x) => x.id === a.id);
+        if (idx >= 0) ASSESSMENTS[idx] = d;
+        updateAssessmentToggleButton();
+        toast(`Assessment ${d.active ? "opened" : "closed"}.`, "ok");
+        await loadAssessments();
+        if (CURRENT_AID) onAssessmentChange(CURRENT_AID);
+      }
+
+      async function onAssessmentChange(aid) {
+        CURRENT_AID = aid || null;
+        if (CURRENT_AID) localStorage.setItem("aid", CURRENT_AID);
+
+        if (S.role === "teacher") {
+          updateAssessmentToggleButton();
+          loadAssessmentSettings();
+          checkScript();
+          loadSummary();
+          loadStudentList();
+          if (
+            document.getElementById("tab-reports")?.classList.contains("active")
+          ) {
+            buildChart();
+          }
+        } else {
+          applyAssessmentPolicy();
+          checkLock();
+          pollReport();
+        }
+      }
+
+      async function createAssessment() {
+        if (S.role !== "teacher") return;
+        const name = prompt("Assessment name:");
+        if (!name) return;
+        const [r, d] = await api("/assessments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        });
+        if (!r.ok) {
+          toast(d.error || "Could not create assessment", "er");
+          return;
+        }
+        toast("Assessment created.", "ok");
+        await loadAssessments();
+        onAssessmentChange(d.id);
+      }
+
+      // ═══════════════════════════════════════════════
+      //  LOGIN
+      // ═══════════════════════════════════════════════
+      async function doLogin() {
+        const email = document
+          .getElementById("login-email")
+          .value.trim()
+          .toLowerCase();
+        const errEl = document.getElementById("login-err");
+        const btn = document.getElementById("login-btn");
+        if (!email) {
+          setErr(errEl, "Please enter your email.");
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spin"></span> Signing in…';
+        errEl.style.display = "none";
+
+        try {
+          const [r, d] = await api("/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+          if (!r.ok) {
+            setErr(errEl, d.error);
+            return;
+          }
+
+          S.email = d.email;
+          S.role = d.role;
+          await loadAssessments();
+          await loadClasses();
+          document.getElementById("nav-email").textContent = d.email;
+          document.getElementById("nav-role").textContent = d.role;
+
+          if (d.role === "teacher") {
+            show("view-teacher");
+            loadStudentList();
+            checkScript();
+            loadSummary();
+          } else {
+            show("view-student");
+            applyAssessmentPolicy();
+            checkLock();
+            pollReport();
+          }
+        } catch (e) {
+          setErr(errEl, "Login failed: " + (e?.message || e));
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Sign In";
+        }
+      }
+
+      function setErr(el, msg) {
+        el.textContent = msg;
+        el.style.display = "block";
+      }
+
+      // ═══════════════════════════════════════════════
+      //  STUDENT
+      // ═══════════════════════════════════════════════
+      async function checkLock() {
+        try {
+          const [, d] = await api(aPath(`/lock-status/${enc(S.email)}`));
+          if (d.locked) {
+            lockEnd = Date.now() + d.remaining * 1000;
+            startLock(d.remaining);
+            setDisabled(true, d.filename || "File submitted");
+          } else {
+            setDisabled(false);
+          }
+        } catch {}
+      }
+
+      function startLock(secs) {
+        clearInterval(lockIv);
+        const banner = document.getElementById("lock-banner");
+        const timerEl = document.getElementById("lock-timer");
+        const prog = document.getElementById("lock-prog");
+        banner.style.display = "flex";
+
+        function tick() {
+          const rem = Math.max(0, Math.round((lockEnd - Date.now()) / 1000));
+          const m = Math.floor(rem / 60),
+            s = rem % 60;
+          timerEl.textContent = `${m}:${s.toString().padStart(2, "0")}`;
+          prog.style.width = `${(rem / LOCK) * 100}%`;
+          if (rem <= 0) {
+            clearInterval(lockIv);
+            banner.style.display = "none";
+            setDisabled(false);
+            toast("Submission window re-opened. You may re-submit.", "ok");
+          }
+        }
+        tick();
+        lockIv = setInterval(tick, 1000);
+      }
+
+      function triggerUpload() {
+        if (document.getElementById("drop-zone").classList.contains("locked"))
+          return;
+        document.getElementById("stu-file").click();
+      }
+
+      function setDisabled(yes, label = "Click to select your file") {
+        document.getElementById("drop-zone").classList.toggle("locked", yes);
+        document.getElementById("sub-btn").disabled = yes;
+        document.getElementById("dz-label").textContent = yes
+          ? `📎 ${label}`
+          : label;
+        if (!yes) document.getElementById("lock-banner").style.display = "none";
+      }
+
+      async function submitFile() {
+        const file = document.getElementById("stu-file").files[0];
+        if (!file) return;
+
+        const a = getCurrentAssessment();
+        if (!a) {
+          toast("No assessment selected.", "er");
+          return;
+        }
+
+        if (a.active === false) {
+          toast(
+            "Assessment is closed — you can view reports but cannot submit.",
+            "wr",
+          );
+          return;
+        }
+
+        const exts =
+          a.allowed_extensions && a.allowed_extensions.length
+            ? a.allowed_extensions.map((x) => String(x).toLowerCase())
+            : [".docx"];
+
+        const maxMb = Number(a.max_size_mb || 10);
+        const maxBytes = maxMb * 1024 * 1024;
+
+        const ext = "." + file.name.split(".").pop().toLowerCase();
+
+        if (!exts.includes(ext)) {
+          toast(`Invalid file type. Allowed: ${exts.join(", ")}`, "er");
+          return;
+        }
+
+        if (file.size > maxBytes) {
+          toast(`File too large. Max size: ${maxMb} MB`, "er");
+          return;
+        }
+
+        const stat = document.getElementById("sub-status");
+        stat.textContent = "Uploading…";
+
+        const fd = new FormData();
+        fd.append("email", S.email);
+        fd.append("file", file);
+
+        try {
+          const [r, d] = await api(aPath("/submit"), {
+            method: "POST",
+            body: fd,
+          });
+          if (!r.ok) {
+            if (d.locked) {
+              lockEnd = Date.now() + d.remaining * 1000;
+              startLock(d.remaining);
+            }
+            toast(d.error, "er");
+            stat.textContent = "";
+            return;
+          }
+          toast("File submitted successfully!", "ok");
+          stat.textContent = `✔ ${file.name} received`;
+          lockEnd = Date.now() + LOCK * 1000;
+          startLock(LOCK);
+          setDisabled(true, file.name);
+          pollReport();
+        } catch {
+          toast("Upload failed — server not reachable.", "er");
+          stat.textContent = "";
+        }
+      }
+
+      // ─── Student report polling ──────────────────────
+      function pollReport() {
+        clearInterval(pollIv);
+        fetchReport();
+        pollIv = setInterval(fetchReport, 12000);
+      }
+
+      async function fetchReport() {
+        try {
+          const [, d] = await api(aPath(`/report/${enc(S.email)}`));
+          if (d.status === "pending") return;
+          renderReport(document.getElementById("report-area"), d);
+          clearInterval(pollIv);
+        } catch {}
+      }
+
+      // ─── Render report (shared by student + modal) ──
+      function renderReport(container, entry) {
+        const r = entry.report || entry;
+        if (!r || r.error) {
+          container.innerHTML = `<div class="pending"><div class="pi">⚠️</div>
+            <p>${r ? r.error : "No report data."}</p></div>`;
+          return;
+        }
+        const gc = "sc-" + (r.grade || "F").toLowerCase();
+        const pct = r.percent ?? Math.round((100 * r.score) / r.total);
+        const rows = (r.tasks || [])
+          .map(
+            (t, i) =>
+              `<tr><td>${i + 1}</td><td>${t.name}</td>
+           <td class="${t.passed ? "pass" : "fail"}">${t.passed ? "✔ Pass" : "✘ Fail"}</td></tr>`,
+          )
+          .join("");
+
+        container.innerHTML = `
+          <div class="score-row">
+            <div class="sc ${gc}">
+              <span class="sn">${r.score}</span>
+              <span class="sd">/ ${r.total}</span>
+            </div>
+            <div>
+              <div style="font-size:1.35rem;font-weight:800;color:var(--primary)">
+                Grade: ${r.grade}</div>
+              <div style="color:var(--muted);font-size:.86rem">
+                ${pct}% — Marked: ${fmt(entry.marked_at || r.marked_at)}</div>
+              ${
+                r.assessment
+                  ? `<div style="font-size:.78rem;color:var(--muted);margin-top:3px">${r.assessment}</div>`
+                  : ""
+              }
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>#</th><th>Task</th><th>Result</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      }
+
+      // ═══════════════════════════════════════════════
+      //  TEACHER — CLASSES
+      // ═══════════════════════════════════════════════
+      async function loadClasses() {
+        try {
+          const [, d] = await api("/classes");
+          CLASSES = Array.isArray(d) ? d : [];
+        } catch {
+          CLASSES = [];
+        }
+      }
+
+      // ═══════════════════════════════════════════════
+      //  TEACHER — Students
+      // ═══════════════════════════════════════════════
+      async function uploadStudentList() {
+        const file = document.getElementById("stu-list-inp").files[0];
+        if (!file) return;
+        const fd = new FormData();
+        fd.append("file", file);
+        try {
+          const [r, d] = await api("/upload-students", {
+            method: "POST",
+            body: fd,
+          });
+          if (!r.ok) {
+            toast(d.error, "er");
+            return;
+          }
+          toast(`${d.count} student(s) registered.`, "ok");
+          await loadClasses();
+          await refreshStudents();
+        } catch {
+          toast("Upload failed.", "er");
+        }
+      }
+
+      async function loadStudentList() {
+        const area = document.getElementById("reg-status");
+        if (!area) return;
+        try {
+          const [rStu, stuList] = await api("/students");
+          const students =
+            rStu.ok && Array.isArray(stuList) ? stuList : [];
+
+          if (!students.length) {
+            area.innerHTML = `<div class="pending"><div class="pi">📭</div><p>No students registered yet.</p></div>`;
+            document.getElementById("st-total").textContent = 0;
+            return;
+          }
+
+          const rows = students.map((s) => {
+            const email = typeof s === "string" ? s : s.email;
+            const cls = typeof s === "string" ? "Unassigned" : (s.class || "Unassigned");
+            return `<tr>
+              <td style="font-size:.84rem">${email}</td>
+              <td style="font-size:.82rem"><span class="badge bg-blue">${cls}</span></td>
+              <td>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <button class="btn btn-xs btn-out" onclick="openEditStudent('${enc(email)}','${enc(cls)}')">✏️ Edit</button>
+                  <button class="btn btn-xs btn-red" onclick="deleteStudent('${enc(email)}')">🗑️ Delete</button>
+                </div>
+              </td>
+            </tr>`;
+          }).join("");
+
+          area.innerHTML = `
+            <div style="overflow-y:auto;max-height:450px;border:1px solid var(--border);border-radius:8px">
+            <table class="tbl tbl-hd">
+              <thead><tr style="position:sticky;top:0">
+                <th>Email</th><th>Class</th><th>Actions</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table></div>`;
+
+          document.getElementById("st-total").textContent = students.length;
+        } catch {
+          area.innerHTML = `<div class="pending"><div class="pi">⚠️</div><p>Could not load students.</p></div>`;
+        }
+      }
+
+      async function refreshStudents() {
+        await loadStudentList();
+        if (CURRENT_AID) loadSummary();
+      }
+
+      function openAddStudent() {
+        openModal("Add Student", `
+          <p style="margin-bottom:12px;font-size:.84rem;color:var(--muted)">
+            Enter email and select a class:</p>
+          <div class="fg">
+            <label>Student Email</label>
+            <input class="inp" type="email" id="add-email" placeholder="student@school.com">
+          </div>
+          <div class="fg">
+            <label>Class</label>
+            <div class="class-input-wrap">
+              <select id="add-class" class="inp">
+                <option value="Unassigned">Unassigned</option>
+                ${CLASSES.map((c) => `<option value="${c}">${c}</option>`).join("")}
+                <option value="__new__">+ New Class</option>
+              </select>
+              <input class="inp" type="text" id="add-class-new" 
+                placeholder="New class name" style="display:none;flex:1">
+            </div>
+            <script>
+              document.getElementById('add-class').addEventListener('change', function() {
+                document.getElementById('add-class-new').style.display = 
+                  this.value === '__new__' ? 'block' : 'none';
+              });
+            </script>
+          </div>
+          <button class="btn btn-green" onclick="doAddStudent()">Add Student</button>`);
+      }
+
+      async function doAddStudent() {
+        const email = (document.getElementById("add-email")?.value || "")
+          .trim()
+          .toLowerCase();
+        let cls = document.getElementById("add-class")?.value || "Unassigned";
+
+        if (cls === "__new__") {
+          cls = (document.getElementById("add-class-new")?.value || "").trim();
+          if (!cls) {
+            toast("Enter a new class name.", "wr");
+            return;
+          }
+        }
+
+        if (!email || !isValidEmail(email)) {
+          toast("Enter a valid email address.", "er");
+          return;
+        }
+
+        if (!confirm(`Add student: ${email} (${cls}) ?`)) return;
+
+        const [r, d] = await api("/students", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, class: cls }),
+        });
+
+        if (!r.ok) {
+          toast(d.error || "Could not add student.", "er");
+          return;
+        }
+        toast("Student added.", "ok");
+        closeModal();
+        await loadClasses();
+        await refreshStudents();
+      }
+
+      function openEditStudent(emailEnc, clsEnc) {
+        const email = decodeURIComponent(emailEnc);
+        const cls = decodeURIComponent(clsEnc);
+        openModal(`Edit Student: ${email}`, `
+          <div class="fg">
+            <label>Email</label>
+            <input class="inp" type="email" id="edit-email" value="${email}">
+          </div>
+          <div class="fg">
+            <label>Class</label>
+            <div class="class-input-wrap">
+              <select id="edit-class" class="inp">
+                <option value="Unassigned">Unassigned</option>
+                ${CLASSES.map((c) => `<option value="${c}"${c === cls ? " selected" : ""}>${c}</option>`).join("")}
+                <option value="__new__">+ New Class</option>
+              </select>
+              <input class="inp" type="text" id="edit-class-new" 
+                placeholder="New class name" style="display:none;flex:1">
+            </div>
+            <script>
+              document.getElementById('edit-class').addEventListener('change', function() {
+                document.getElementById('edit-class-new').style.display = 
+                  this.value === '__new__' ? 'block' : 'none';
+              });
+            </script>
+          </div>
+          <button class="btn btn-green" onclick="doEditStudent('${emailEnc}')">Save Changes</button>`);
+      }
+
+      async function doEditStudent(emailEnc) {
+        const oldEmail = decodeURIComponent(emailEnc);
+        const newEmail = (document.getElementById("edit-email")?.value || "")
+          .trim()
+          .toLowerCase();
+        let cls = document.getElementById("edit-class")?.value || "Unassigned";
+
+        if (cls === "__new__") {
+          cls = (document.getElementById("edit-class-new")?.value || "").trim();
+          if (!cls) {
+            toast("Enter a new class name.", "wr");
+            return;
+          }
+        }
+
+        if (!newEmail || !isValidEmail(newEmail)) {
+          toast("Invalid email format.", "er");
+          return;
+        }
+
+        if (!confirm(`Update student?`)) return;
+
+        const [r, d] = await api(`/students/${enc(oldEmail)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: newEmail, class: cls }),
+        });
+
+        if (!r.ok) {
+          toast(d.error || "Could not update student.", "er");
+          return;
+        }
+        toast("Student updated.", "ok");
+        closeModal();
+        await loadClasses();
+        await refreshStudents();
+      }
+
+      async function deleteStudent(emailEnc) {
+        const email = decodeURIComponent(emailEnc);
+        if (!confirm(`Delete student: ${email} ?`)) return;
+        const [r, d] = await api(`/students/${enc(email)}`, {
+          method: "DELETE",
+        });
+        if (!r.ok) {
+          toast(d.error || "Could not delete student.", "er");
+          return;
+        }
+        toast("Student deleted.", "ok");
+        await refreshStudents();
+      }
+
+      // ═══════════════════════════════════════════════
+      //  TEACHER — Script & Settings
+      // ═══════════════════════════════════════════════
+      async function loadAssessmentSettings() {
+        if (S.role !== "teacher") return;
+
+        const a = getCurrentAssessment();
+        const maxEl = document.getElementById("as-max");
+        const activeEl = document.getElementById("as-active");
+        const instEl = document.getElementById("as-inst");
+
+        if (!maxEl || !activeEl || !instEl) {
+          console.warn("Settings elements not found.");
+          return;
+        }
+
+        if (!a) {
+          document.getElementById("as-settings-status").textContent =
+            "No assessment selected.";
+          return;
+        }
+
+        maxEl.value = Number(a.max_size_mb || 10);
+        activeEl.value = String(a.active !== false);
+        instEl.value = a.instructions || "";
+
+        // Load ext checkboxes
+        const exts = (a.allowed_extensions || [".docx"]).map((e) =>
+          String(e).toLowerCase(),
+        );
+        document.getElementById("ext-docx").checked = exts.includes(".docx");
+        document.getElementById("ext-xlsx").checked = exts.includes(".xlsx");
+        document.getElementById("ext-pptx").checked = exts.includes(".pptx");
+        document.getElementById("ext-py").checked = exts.includes(".py");
+        document.getElementById("ext-pas").checked = exts.includes(".pas");
+
+        document.getElementById("as-settings-status").textContent =
+          `Loaded settings for: ${a.name}`;
+      }
+
+      async function saveAssessmentSettings() {
+        if (S.role !== "teacher") return;
+
+        const a = getCurrentAssessment();
+        if (!a) {
+          toast("No assessment selected.", "er");
+          return;
+        }
+
+        const maxEl = document.getElementById("as-max");
+        const activeEl = document.getElementById("as-active");
+        const instEl = document.getElementById("as-inst");
+        const box = document.getElementById("as-settings-status");
+
+        const max = Number(maxEl.value || 10);
+        const active = activeEl.value === "true";
+        const instructions = instEl.value.trim();
+
+        // Collect checked extensions
+        const exts = [];
+        if (document.getElementById("ext-docx").checked) exts.push(".docx");
+        if (document.getElementById("ext-xlsx").checked) exts.push(".xlsx");
+        if (document.getElementById("ext-pptx").checked) exts.push(".pptx");
+        if (document.getElementById("ext-py").checked) exts.push(".py");
+        if (document.getElementById("ext-pas").checked) exts.push(".pas");
+
+        if (!exts.length) {
+          toast("Select at least one file type.", "wr");
+          return;
+        }
+
+        const [r, d] = await api(`/assessments/${a.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            allowed_extensions: exts,
+            max_size_mb: max,
+            active: active,
+            instructions: instructions,
+            submission_type: "single_file",
+          }),
+        });
+
+        if (!r.ok) {
+          toast(d.error || "Could not save settings.", "er");
+          if (box) box.textContent = "Save failed.";
+          return;
+        }
+
+        const idx = ASSESSMENTS.findIndex((x) => x.id === a.id);
+        if (idx >= 0) ASSESSMENTS[idx] = d;
+
+        CURRENT_AID = d.id;
+        localStorage.setItem("aid", CURRENT_AID);
+
+        updateAssessmentToggleButton();
+        if (box) {
+          box.textContent = `Saved: ${d.name} | types=${d.allowed_extensions.join(", ")} | max=${d.max_size_mb}MB | active=${d.active}`;
+        }
+
+        toast("Assessment settings saved.", "ok");
+        await loadAssessments();
+        onAssessmentChange(CURRENT_AID);
+      }
+
+      async function checkScript() {
+        try {
+          const [, d] = await api(aPath("/script-status"));
+          const box = document.getElementById("script-status");
+          box.innerHTML = d.uploaded
+            ? `<div class="banner banner-ok">✅ <div>
+                 <strong>Script active</strong><br>
+                 <span style="font-size:.8rem;color:#166534">Uploaded: ${fmt(d.uploaded_at)}</span>
+               </div></div>`
+            : `<div class="banner banner-warn">⚠️ <span>No script uploaded yet.</span></div>`;
+        } catch {}
+      }
+
+      async function uploadScript() {
+        const file = document.getElementById("script-inp").files[0];
+        if (!file) return;
+        const fd = new FormData();
+        fd.append("file", file);
+        try {
+          const [r, d] = await api(aPath("/upload-script"), {
+            method: "POST",
+            body: fd,
+          });
+          if (!r.ok) {
+            toast(d.error, "er");
+            return;
+          }
+          toast(d.message, "ok");
+          checkScript();
+        } catch {
+          toast("Upload failed.", "er");
+        }
+      }
+
+      async function runMarking(email) {
+        const prog = document.getElementById("mark-prog");
+        prog.innerHTML = `<div class="banner banner-warn">
+          <span class="spin" style="border-top-color:var(--warn)"></span>
+          Running marking script — please wait…</div>`;
+        try {
+          const body = email ? { email } : {};
+          const [, data] = await api(aPath("/run-marking"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const total = Object.keys(data).length;
+          const ok = Object.values(data).filter(
+            (d) => d.status === "success",
+          ).length;
+          prog.innerHTML = `<div class="banner banner-ok">
+            ✅ Marking complete — ${ok} / ${total} successful.</div>`;
+          toast("Marking complete!", "ok");
+          loadSummary();
+          if (
+            document.getElementById("tab-reports")?.classList.contains("active")
+          )
+            buildChart();
+        } catch {
+          prog.innerHTML = `<div class="banner banner-warn">❌ Marking failed.</div>`;
+          toast("Marking failed.", "er");
+        }
+      }
+
+      function openMarkOne() {
+        openModal(
+          "Mark One Student",
+          `
+          <p style="margin-bottom:12px;font-size:.88rem;color:var(--muted)">
+            Enter the student's email to mark their submission:</p>
+          <div class="fg">
+            <input class="inp" type="email" id="mo-email" placeholder="student@school.com">
+          </div>
+          <button class="btn btn-green" onclick="doMarkOne()">▶ Run Marking</button>`,
+        );
+      }
+
+      async function doMarkOne() {
+        const email = (document.getElementById("mo-email")?.value || "")
+          .trim()
+          .toLowerCase();
+        if (!email) return;
+        closeModal();
+        await runMarking(email);
+      }
+
+      // ═══════════════════════════════════════════════
+      //  TEACHER — Reports
+      // ═══════════════════════════════════════════════
+      async function loadSummary() {
+        try {
+          const [, data] = await api(aPath("/summary"));
+          updateStats(data);
+          renderTable(data);
+        } catch {}
+      }
+
+      function updateStats(data) {
+        const submitted = data.filter((s) => s.submitted).length;
+        const marked = data.filter(
+          (s) => s.marking_status === "success",
+        ).length;
+        const scores = data
+          .filter((s) => s.report?.score !== undefined)
+          .map((s) => (s.report.score / s.report.total) * 100);
+        const avg = scores.length
+          ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) + "%"
+          : "—";
+        document.getElementById("st-total").textContent = data.length;
+        document.getElementById("st-sub").textContent = submitted;
+        document.getElementById("st-marked").textContent = marked;
+        document.getElementById("st-avg").textContent = avg;
+      }
+
+      function renderTable(data) {
+        const area = document.getElementById("smry-area");
+        if (!data.length) {
+          area.innerHTML = `<div class="pending"><div class="pi">📭</div>
+            <p>No submissions yet.</p></div>`;
+          return;
+        }
+        const rows = data
+          .map((s) => {
+            const r = s.report;
+            const score = r?.score ?? null,
+              total = r?.total ?? 20;
+            const pct =
+              score !== null ? Math.round((100 * score) / total) : null;
+            const clr =
+              pct >= 80
+                ? "#16a34a"
+                : pct >= 60
+                  ? "#d97706"
+                  : pct !== null
+                    ? "#dc2626"
+                    : "#e2e8f0";
+            return `<tr>
+              <td style="font-size:.83rem">${s.email}</td>
+              <td style="font-size:.78rem"><span class="badge bg-blue">${s.class || "Unassigned"}</span></td>
+              <td>${
+                s.submitted
+                  ? `<span class="badge bg-ok">Submitted</span>`
+                  : `<span class="badge bg-gray">—</span>`
+              }</td>
+              <td>${
+                s.marking_status === "success"
+                  ? `<span class="badge bg-blue">Marked</span>`
+                  : s.submitted
+                    ? `<span class="badge bg-warn">Awaiting</span>`
+                    : `<span class="badge bg-gray">—</span>`
+              }</td>
+              <td>${
+                score !== null
+                  ? `<div class="bar-wrap">
+                    <div class="bar"><div class="bar-fill" style="width:${pct}%;background:${clr}"></div></div>
+                    <span style="font-size:.8rem;font-weight:700;min-width:42px">${score}/${total}</span>
+                   </div>`
+                  : "—"
+              }</td>
+              <td>${
+                r?.grade
+                  ? `<span class="badge ${r.grade === "A" || r.grade === "B" ? "bg-ok" : r.grade === "C" ? "bg-blue" : "bg-err"}">${r.grade}</span>`
+                  : "—"
+              }</td>
+              <td>${
+                s.marking_status === "success"
+                  ? `<button class="btn btn-xs btn-out" onclick="showReport('${s.email}')">View</button>`
+                  : ""
+              }</td>
+            </tr>`;
+          })
+          .join("");
+
+        area.innerHTML = `
+          <div style="overflow-x:auto">
+          <table class="tbl tbl-hd">
+            <thead><tr><th>Email</th><th>Class</th><th>Submission</th><th>Marking</th>
+              <th>Score</th><th>Grade</th><th>Report</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table></div>`;
+      }
+
+      async function showReport(email) {
+        try {
+          const [, data] = await api(aPath(`/report/${enc(email)}`));
+          openModal(`Report — ${email}`, "");
+          renderReport(document.getElementById("modal-body"), data);
+        } catch {
+          toast("Could not load report.", "er");
+        }
+      }
+
+      // ─── Chart ──────────────────────────────────────
+      async function buildChart() {
+        try {
+          const [, data] = await api(aPath("/summary"));
+          const marked = data.filter((s) => s.report?.score !== undefined);
+          const ctx = document.getElementById("chart").getContext("2d");
+          const labels = marked.map((s) => s.email.split("@")[0]);
+          const scores = marked.map((s) =>
+            Math.round((100 * s.report.score) / s.report.total),
+          );
+          const colors = scores.map((p) =>
+            p >= 80 ? "#16a34a" : p >= 60 ? "#d97706" : "#dc2626",
+          );
+
+          if (chartObj) chartObj.destroy();
+          if (!marked.length) return;
+
+          chartObj = new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "Score (%)",
+                  data: scores,
+                  backgroundColor: colors,
+                  borderRadius: 6,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: { min: 0, max: 100, ticks: { callback: (v) => v + "%" } },
+              },
+              plugins: { legend: { display: false } },
+            },
+          });
+        } catch {}
+      }
+
+      // ─── Modal ──────────────────────────────────────
+      function openModal(title, body) {
+        document.getElementById("modal-title").textContent = title;
+        document.getElementById("modal-body").innerHTML = body;
+        document.getElementById("overlay").classList.add("open");
+      }
+      function closeModal() {
+        document.getElementById("overlay").classList.remove("open");
+      }
+      function maybeClose(e) {
+        if (e.target === document.getElementById("overlay")) closeModal();
+      }
+
+      // ─── Utils ──────────────────────────────────────
+      const enc = (s) => encodeURIComponent(s);
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+      function isValidEmail(e) {
+        return EMAIL_RE.test((e || "").trim());
+      }
+      function fmt(iso) {
+        if (!iso) return "—";
+        try {
+          return new Date(iso).toLocaleString();
+        } catch {
+          return iso;
+        }
+      }
+    </script>
+  </body>
+</html>
