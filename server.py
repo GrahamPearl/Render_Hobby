@@ -11,6 +11,10 @@ from flask_cors import CORS
 import json, os, subprocess, time, re, shutil
 from datetime import datetime
 from werkzeug.utils import secure_filename
+import threading
+import uuid
+
+JOBS = {}  # job_id → {status, progress, total, results, logs}
 
 try:
     from dotenv import load_dotenv
@@ -441,8 +445,99 @@ def clear_submissions(aid, email):
 # ═══════════════════════════════════════════════════════════════════════════
 #  PER-ASSESSMENT: MARKING
 # ═══════════════════════════════════════════════════════════════════════════
+def run_marking_job(job_id, aid, target_email=None):
+    script = ascript(aid)
+    locks  = jload(alocks(aid), {})
+    reports = jload(areports(aid), {})
+
+    targets = [target_email] if target_email else list(locks.keys())
+    total   = len(targets)
+
+    JOBS[job_id].update({
+        "status": "running",
+        "progress": 0,
+        "total": total,
+        "logs": []
+    })
+
+    for i, email in enumerate(targets, start=1):
+        try:
+            if email not in locks:
+                JOBS[job_id]["logs"].append(f"{email}: no submission")
+                continue
+
+            folder = os.path.join(asubs(aid), locks[email]["current_folder"])
+
+            proc = subprocess.run(
+                ["python", script, folder, email],
+                capture_output=True, text=True, timeout=60
+            )
+
+            try:
+                report = json.loads(proc.stdout.strip())
+            except:
+                report = {"error": proc.stderr.strip() or "Invalid JSON"}
+
+            entry = {
+                "status": "success",
+                "report": report,
+                "marked_at": now_iso(),
+                "overrides": {}
+            }
+
+            recalc(entry)
+            reports[email] = entry
+
+            JOBS[job_id]["logs"].append(f"{email}: done")
+
+        except subprocess.TimeoutExpired:
+            JOBS[job_id]["logs"].append(f"{email}: timeout")
+        except Exception as e:
+            JOBS[job_id]["logs"].append(f"{email}: error {str(e)}")
+
+        JOBS[job_id]["progress"] = i
+
+    jsave(areports(aid), reports)
+
+    JOBS[job_id]["status"] = "completed"
+
 @app.route("/api/a/<aid>/run-marking", methods=["POST"])
-def run_marking(aid):
+def start_marking(aid):
+    script = ascript(aid)
+    if not os.path.exists(script):
+        return jsonify({"error": "No script uploaded"}), 400
+
+    body = request.json or {}
+    email = body.get("email")
+
+    job_id = str(uuid.uuid4())
+
+    JOBS[job_id] = {
+        "status": "queued",
+        "progress": 0,
+        "total": 0,
+        "logs": []
+    }
+
+    thread = threading.Thread(
+        target=run_marking_job,
+        args=(job_id, aid, email),
+        daemon=True
+    )
+    thread.start()
+
+    return jsonify({"job_id": job_id})
+
+@app.route("/api/job-status/<job_id>")
+def job_status(job_id):
+    job = JOBS.get(job_id)
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    return jsonify(job)
+
+##@app.route("/api/a/<aid>/run-marking", methods=["POST"])
+##def run_marking(aid):
     script = ascript(aid)
     if not os.path.exists(script):
         return jsonify({"error": "No marking script uploaded"}), 400
@@ -475,7 +570,6 @@ def run_marking(aid):
     reports.update(results)
     jsave(areports(aid), reports)
     return jsonify(results)
-
 # ═══════════════════════════════════════════════════════════════════════════
 #  PER-ASSESSMENT: OVERRIDES
 # ═══════════════════════════════════════════════════════════════════════════
@@ -511,6 +605,174 @@ def reset_override(aid, email, task_id):
     reports[email] = entry
     jsave(areports(aid), reports)
     return jsonify(entry)
+
+@app.route("/api/a/<aid>/analytics")
+def assessment_analytics(aid):
+    reports = jload(areports(aid), {})
+    students = load_students()
+
+    grades = {"A": 0, "B": 0, "C": 0, "D": 0, "F": 0}
+    tasks = {}
+    trend = []
+
+    total_scores = []
+
+    for email, entry in reports.items():
+        if entry.get("status") != "success":
+            continue
+
+        score = entry.get("adjusted_score")
+        total = entry.get("report", {}).get("total", 0)
+
+        if total:
+            pct = 100 * score / total
+            total_scores.append(pct)
+
+        # grade count
+        grade = entry.get("adjusted_grade")
+        if grade in grades:
+            grades[grade] += 1
+
+        # tasks
+        for t in entry.get("report", {}).get("tasks", []):
+            tid = str(t["id"])
+            if tid not in tasks:
+                tasks[tid] = {
+                    "name": t["name"],
+                    "total": 0,
+                    "passed": 0
+                }
+
+            tasks[tid]["total"] += 1
+            if t["passed"]:
+                tasks[tid]["passed"] += 1
+
+    # calculate pass rates
+    for tid in tasks:
+        t = tasks[tid]
+        t["pass_rate"] = round(100 * t["passed"] / t["total"]) if t["total"] else 0
+
+    # simple trend (1-point trend just for now)
+    avg = round(sum(total_scores) / len(total_scores), 1) if total_scores else 0
+    trend.append({
+        "assessment": aid,
+        "average": avg
+    })
+    
+    # --- INSIGHTS ---
+    at_risk = []
+    top_performers = []
+
+    scores_by_student = []
+
+    for email, entry in reports.items():
+        if entry.get("status") != "success":
+            continue
+
+        score = entry.get("adjusted_score")
+        total = entry.get("report", {}).get("total", 0)
+
+        if total:
+            pct = 100 * score / total
+            scores_by_student.append((email, pct))
+
+    # sort
+    scores_by_student.sort(key=lambda x: x[1])
+
+    # bottom 3 (at risk)
+    at_risk = [{"email": s[0]} for s in scores_by_student[:3]]
+
+    # top 3
+    top_performers = [{"email": s[0]} for s in scores_by_student[-3:]]
+
+    # variance
+    values = [s[1] for s in scores_by_student]
+    variance = 0
+    if values:
+        mean = sum(values) / len(values)
+        variance = round(sum((x - mean) ** 2 for x in values) / len(values), 2)
+
+    # hardest & easiest task
+    hardest_task = None
+    easiest_task = None
+
+    if tasks:
+        sorted_tasks = sorted(tasks.values(), key=lambda t: t["pass_rate"])
+        hardest_task = sorted_tasks[0]
+        easiest_task = sorted_tasks[-1]    
+
+    return jsonify({    
+        "grades": grades,
+        "tasks": tasks,
+        "trend": trend,
+        "insights": {
+            "at_risk": at_risk,
+            "top_performers": top_performers,
+            "hardest_task": hardest_task,
+            "easiest_task": easiest_task,
+            "variance": variance
+        }
+    })
+
+    
+@app.route("/api/analytics/overall")
+def overall_analytics():
+    meta = load_assessments_meta()
+    all_scores = []
+    student_perf = {}
+
+    for a in meta:
+        reports = jload(areports(a["id"]), {})
+        for email, r in reports.items():
+            if r.get("status") != "success":
+                continue
+
+            total = r["report"].get("total",1)
+            score = r.get("adjusted_score",0)
+            pct = 100 * score / total if total else 0
+
+            all_scores.append(pct)
+            student_perf.setdefault(email, []).append(pct)
+    
+    trend = []
+
+    for a in meta:
+        reports = jload(areports(a["id"]), {})
+        scores = []
+
+        for r in reports.values():
+            if r.get("status") != "success":
+                continue
+            total = r["report"].get("total",1)
+            score = r.get("adjusted_score",0)
+            scores.append(100*score/total if total else 0)
+
+        if scores:
+            trend.append({
+                "assessment": a["name"],
+                "average": round(sum(scores)/len(scores),1)
+            })
+
+    avg = sum(all_scores)/len(all_scores) if all_scores else 0
+
+    return jsonify({
+        "average": round(avg,1),
+        "trend": trend,
+        "students": {
+            k: round(sum(v)/len(v),1) for k,v in student_perf.items()
+        }
+    })
+    
+@app.route("/api/students/export")
+def export_students():
+    students = load_students()
+    lines = ["email,class"]
+    for s in students:
+        lines.append(f"{s['email']},{s['class']}")
+    return "\n".join(lines), 200, {
+        "Content-Type": "text/csv",
+        "Content-Disposition": "attachment; filename=students.csv"
+    }
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  PER-ASSESSMENT: REPORTS & SUMMARY
